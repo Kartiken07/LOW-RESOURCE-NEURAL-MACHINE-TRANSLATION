@@ -1,64 +1,516 @@
 # Low-Resource Neural Machine Translation: English → Assamese
 
-EXP 10 NLP mini project. Fine-tunes the pretrained **NLLB-200 distilled 600M** model on an open English–Assamese (`en-as`) parallel corpus and compares BLEU/chrF before and after fine-tuning.
+Fine-tuning **NLLB-200 distilled 600M** for low-resource English-to-Assamese (`en-as`) neural machine translation using the AI4Bharat Samanantar parallel corpus.
 
-> **Status:** code, notebook and instructions are complete. The model has **not been trained yet** and the results table below is intentionally empty. Scores must come from a real Kaggle GPU run and are not estimated.
+This repository contains the complete EXP 10 pipeline:
+
+**Data preparation → Pretrained baseline → Fine-tuning → Evaluation → Qualitative analysis**
+
+## Results
+
+The experiment was successfully trained and evaluated on a **Kaggle NVIDIA Tesla T4 GPU**.
+
+Both models were evaluated on the **same 1,000 held-out test pairs**.
+
+| Model | BLEU | chrF |
+| --- | ---: | ---: |
+| Pretrained NLLB-200 distilled 600M | 7.45 | 31.82 |
+| **Fine-tuned NLLB** | **9.80** | **35.29** |
+
+### Improvement
+
+- **BLEU:** 7.45 → 9.80 (**+2.35 points, ~31.5% relative improvement**)
+- **chrF:** 31.82 → 35.29 (**+3.47 points, ~10.9% relative improvement**)
+
+Fine-tuning therefore produced a measurable improvement on both evaluation metrics.
+
+> The model remains an experimental low-resource translation system. Metric improvements do not imply that every generated translation is correct; qualitative evaluation identified both improved outputs and occasional hallucination.
+
+---
+
+## Experiment Configuration
+
+| Setting | Value |
+| --- | --- |
+| Base model | `facebook/nllb-200-distilled-600M` |
+| Translation direction | English → Assamese |
+| Source language code | `eng_Latn` |
+| Target language code | `asm_Beng` |
+| Dataset | AI4Bharat Samanantar |
+| Selected pairs | 40,000 |
+| Training pairs | 32,000 |
+| Validation pairs | 4,000 |
+| Test pairs | 4,000 |
+| Evaluation pairs | 1,000 |
+| Epochs | 2 |
+| Batch size | 4 |
+| Gradient accumulation | 4 |
+| Effective batch size | 16 |
+| Learning rate | `2e-5` |
+| Weight decay | `0.01` |
+| Maximum sequence length | 128 |
+| Seed | 42 |
+| Precision | FP16 |
+| GPU | NVIDIA Tesla T4 |
+| Training time | **54.3 minutes** |
+| Final validation loss | **1.9105** |
+
+The best model is selected using validation loss.
+
+---
 
 ## Dataset
 
-- **Used:** [AI4Bharat Samanantar](https://huggingface.co/datasets/ai4bharat/samanantar), config `as` (~141k English–Assamese pairs, licence **CC BY-NC 4.0**, academic/non-commercial use). It is downloaded automatically by `src/preprocess.py --hf-dataset samanantar`.
-- **Alternative:** [OPUS-100](https://huggingface.co/datasets/Helsinki-NLP/opus-100) `as-en` (`--hf-dataset opus100`, licence not specified).
-- The WMT 2026 Indic MT data suggested in the project guide was not used because its test data is distributed to registered participants only. Cite Samanantar (Ramesh et al., 2021, "Samanantar: The Largest Publicly Available Parallel Corpora Collection for 11 Indic Languages") and OPUS-100 (Zhang et al., 2020) if used.
-- Data files are not stored in this repository.
+The experiment uses the Assamese configuration of the open **AI4Bharat Samanantar** parallel corpus.
 
-## Preprocessing (`src/preprocess.py`)
+The raw dataset contained **141,227 English–Assamese sentence pairs**.
 
-1. Download the open dataset (`--hf-dataset`), or load aligned text files (`--src-file/--tgt-file`) or a TSV/CSV/JSONL with English and Assamese columns.
-2. Unicode NFC normalisation, removal of control/invisible characters, whitespace collapsing. Assamese script and punctuation are preserved.
-3. Remove empty/missing translations, over-long pairs, pairs with extreme length ratio (misalignment guard) and duplicate pairs.
-4. Optionally keep a random subset (`--max-rows`) and/or remove any pair that also appears in a test/reference file (`--exclude`).
-5. Shuffle with seed 42 and split 80:10:10 into `train.csv`, `validation.csv`, `test.csv`; counts are written to `preprocess_stats.csv`.
-6. Tokenisation uses the NLLB tokenizer with `src_lang=eng_Latn`, `tgt_lang=asm_Beng`, max length 128.
+### Preprocessing
 
-## Model and training (`src/train.py`)
+`src/preprocess.py` performs:
 
-- Model: `facebook/nllb-200-distilled-600M` (licence **CC-BY-NC-4.0**: academic, non-commercial use only).
-- Starting settings: 2 epochs, batch size 4 (grad. accumulation 4), learning rate 2e-5, max length 128, seed 42, fp16 on GPU, validation after every epoch, best checkpoint by validation loss.
-- Platform: Kaggle Notebook with GPU. Reduce `--batch-size` or `--max-length` if memory runs out; test with `--max-train-rows 200` first.
-- Actual settings and training time: **to be filled after the Kaggle run** (`training_time_minutes.txt` and `training_log.csv` are written to the output folder).
+1. Unicode NFC normalization
+2. Control/invisible-character removal
+3. Whitespace normalization
+4. Empty translation removal
+5. Length filtering
+6. Extreme source/target length-ratio filtering
+7. Duplicate-pair removal
+8. Deterministic random subsampling
+9. 80:10:10 train/validation/test splitting
 
-## Evaluation (`src/evaluate.py`)
+The actual run produced:
 
-BLEU and chrF via SacreBLEU on held-out test pairs (the 10% split, never used in training), for the pretrained and the fine-tuned model on exactly the same examples (`--max-samples`). Output: `results/metrics.csv` and `results/sample_translations.csv` (English input, reference, model output).
+| Stage | Pairs |
+| --- | ---: |
+| Raw | 141,227 |
+| After empty removal | 141,227 |
+| After length filtering | 141,206 |
+| After length-ratio filtering | 139,713 |
+| After deduplication | 139,707 |
+| Selected for experiment | **40,000** |
 
-| Model | BLEU | chrF |
-|-------|------|------|
-| Pretrained (before fine-tuning) | not yet evaluated | not yet evaluated |
-| Fine-tuned | not yet evaluated | not yet evaluated |
+Final split:
 
-Sample translations and a short error analysis go here after the run.
+```text
+Training      32,000
+Validation     4,000
+Test           4,000
+```
 
-## How to run
+The split and subsampling use seed `42`.
 
-On Kaggle: open `notebooks/exp10_nmt_kaggle.ipynb`, enable GPU and Internet, and run the cells in order (the dataset downloads automatically). The last cell is the interactive English → Assamese demo.
+Dataset files are intentionally **not stored in this repository** and are downloaded automatically during preprocessing.
 
-Locally (GPU recommended):
+### Licences
+
+- **Samanantar:** CC BY-NC 4.0
+- **NLLB-200:** CC-BY-NC-4.0
+
+This repository is intended for academic/research use.
+
+---
+
+## Model
+
+The project fine-tunes:
+
+```text
+facebook/nllb-200-distilled-600M
+```
+
+NLLB-200 is a multilingual sequence-to-sequence translation model.
+
+For this experiment:
+
+```text
+English   → eng_Latn
+Assamese  → asm_Beng
+```
+
+Tokenization and generation use the corresponding NLLB language codes.
+
+---
+
+## Training
+
+Training is implemented in:
+
+```text
+src/train.py
+```
+
+The full experiment used:
 
 ```bash
-pip install -r requirements.txt
-python src/preprocess.py --hf-dataset samanantar --max-rows 40000 --out-dir data/processed
-python src/evaluate.py --model facebook/nllb-200-distilled-600M --label "Pretrained (before fine-tuning)" --max-samples 1000
-python src/train.py --data-dir data/processed --output-dir nllb-en-as
-python src/evaluate.py --model nllb-en-as --label "Fine-tuned" --max-samples 1000
+python src/train.py \
+  --data-dir data/processed \
+  --output-dir nllb-en-as \
+  --epochs 2 \
+  --batch-size 4 \
+  --grad-accum 4 \
+  --lr 2e-5 \
+  --max-length 128 \
+  --seed 42
 ```
 
-Large model checkpoints and dataset files are not committed; see `.gitignore`.
+Training uses:
 
-## Repository layout
+- `Seq2SeqTrainer`
+- AdamW-based optimization
+- gradient accumulation
+- FP16 on CUDA
+- validation after each epoch
+- checkpointing after each epoch
+- best-model loading by validation loss
+- deterministic seed configuration
 
+Training completed **4,000 optimization steps** in **54.3 minutes** on an NVIDIA Tesla T4.
+
+The final validation loss was approximately:
+
+```text
+1.9105
 ```
-README.md  requirements.txt
+
+---
+
+## Evaluation
+
+Evaluation is implemented in:
+
+```text
+src/evaluate.py
+```
+
+Both the pretrained and fine-tuned models were evaluated on exactly the same first **1,000 examples** from the held-out test split.
+
+Metrics are calculated with **SacreBLEU**:
+
+- BLEU
+- chrF
+
+Baseline:
+
+```bash
+python src/evaluate.py \
+  --model facebook/nllb-200-distilled-600M \
+  --label "Pretrained (before fine-tuning)" \
+  --max-samples 1000
+```
+
+Fine-tuned model:
+
+```bash
+python src/evaluate.py \
+  --model nllb-en-as \
+  --label "Fine-tuned" \
+  --max-samples 1000
+```
+
+---
+
+## Qualitative Examples
+
+### Example 1
+
+**English**
+
+> We are public servants.
+
+**Reference**
+
+> আমি চৰকাৰৰ দ্বাৰা নিযুক্ত কৰ্মচৰী।
+
+**Pretrained**
+
+> আমি ৰাজহুৱা সেৱক।
+
+**Fine-tuned**
+
+> আমি ৰাজহুৱা কৰ্মচাৰী।
+
+The fine-tuned model uses terminology closer to the reference.
+
+### Example 2
+
+**English**
+
+> Log out %s of this session to log in as a different user
+
+**Pretrained**
+
+> অন্য ব্যৱহাৰকৰ্তাৰূপে লগ ইন কৰিবলৈ এই অধিৱেশনৰ %s ৰ লগ আউট কৰক
+
+**Fine-tuned**
+
+> এটা ভিন্ন ব্যৱহাৰকৰ্তাৰূপে প্ৰৱেশ কৰিবলৈ এই অধিবেশনৰ %s প্ৰস্থান কৰক
+
+Both models preserve the `%s` placeholder, while the fine-tuned output moves closer to the reference wording.
+
+### Example 3
+
+**English**
+
+> In my &Start Menu Programs folder
+
+**Pretrained**
+
+> মোৰ &Start Menu Programs ফোল্ডাৰত
+
+**Fine-tuned**
+
+> মোৰ &Start মেনু প্ৰোগ্ৰাম ফোল্ডাৰত
+
+The fine-tuned model translates more of the interface phrase into Assamese.
+
+### Example 4
+
+**English**
+
+> Expected , or ) after variable name in variable reference but found %1$S.
+
+The fine-tuned model preserves `%1$S` and produces a translation structurally closer to the Assamese reference.
+
+---
+
+## Error Analysis
+
+Fine-tuning improved the aggregate scores, but not every translation improved.
+
+One example clearly demonstrates hallucination.
+
+**English**
+
+> Rather than say what might be discouraging, we could strive to be encouraging.
+
+**Reference**
+
+> নিৰন্তৰে ইজনে সিজনক সহায় কৰক
+
+The pretrained model returned an unrelated editing marker:
+
+> [সম্পাদনা কৰক]
+
+The fine-tuned model instead generated unrelated religious content.
+
+This highlights an important limitation: **higher BLEU and chrF do not guarantee reliable sentence-level translation**.
+
+Potential causes include:
+
+- limited fine-tuning data
+- noisy or loosely aligned source/reference pairs
+- domain mismatch
+- low-resource language coverage
+- short fine-tuning duration
+
+The model should therefore be considered an **experimental NMT system**, not a production translator.
+
+---
+
+## Results Artifacts
+
+Real outputs from the Kaggle GPU run are stored under:
+
+```text
+results/
+├── metrics.csv
+├── sample_translations.csv
+├── training_log.csv
+├── training_time_minutes.txt
+└── experiment_summary.md
+```
+
+### `metrics.csv`
+
+Contains BLEU and chrF for the pretrained and fine-tuned models.
+
+### `sample_translations.csv`
+
+Contains English source sentences, Assamese references, and generated translations from both models.
+
+### `training_log.csv`
+
+Contains recorded training loss, gradient norms, learning rates, validation metrics, runtime statistics and final training statistics.
+
+### `training_time_minutes.txt`
+
+Contains the measured training duration:
+
+```text
+54.3
+```
+
+### `experiment_summary.md`
+
+Provides the complete experimental configuration, results, qualitative analysis and limitations.
+
+---
+
+## How to Reproduce
+
+### Kaggle
+
+The easiest method is:
+
+```text
+notebooks/run_all_kaggle.ipynb
+```
+
+1. Import the notebook into Kaggle.
+2. Enable a GPU accelerator.
+3. Enable Internet.
+4. Run the pipeline.
+
+The notebook performs preprocessing, baseline evaluation, fine-tuning and final evaluation.
+
+A more detailed notebook is also available:
+
+```text
 notebooks/exp10_nmt_kaggle.ipynb
-src/{preprocess,train,evaluate}.py
-results/{metrics.csv,sample_translations.csv}
 ```
+
+### Local Setup
+
+GPU execution is strongly recommended.
+
+```bash
+git clone https://github.com/Kartiken07/LOW-RESOURCE-NEURAL-MACHINE-TRANSLATION.git
+cd LOW-RESOURCE-NEURAL-MACHINE-TRANSLATION
+
+pip install -r requirements.txt
+```
+
+Preprocess:
+
+```bash
+python src/preprocess.py \
+  --hf-dataset samanantar \
+  --max-rows 40000 \
+  --out-dir data/processed
+```
+
+Evaluate pretrained baseline:
+
+```bash
+python src/evaluate.py \
+  --model facebook/nllb-200-distilled-600M \
+  --label "Pretrained (before fine-tuning)" \
+  --max-samples 1000
+```
+
+Fine-tune:
+
+```bash
+python src/train.py \
+  --data-dir data/processed \
+  --output-dir nllb-en-as \
+  --epochs 2 \
+  --batch-size 4 \
+  --grad-accum 4 \
+  --lr 2e-5 \
+  --max-length 128 \
+  --seed 42
+```
+
+Evaluate:
+
+```bash
+python src/evaluate.py \
+  --model nllb-en-as \
+  --label "Fine-tuned" \
+  --max-samples 1000
+```
+
+---
+
+## Repository Structure
+
+```text
+LOW-RESOURCE-NEURAL-MACHINE-TRANSLATION/
+│
+├── docs/
+│   └── TEAM_HANDOFF.md
+│
+├── notebooks/
+│   ├── exp10_nmt_kaggle.ipynb
+│   ├── run_all_kaggle.ipynb
+│   └── show_results.ipynb
+│
+├── results/
+│   ├── metrics.csv
+│   ├── sample_translations.csv
+│   ├── training_log.csv
+│   ├── training_time_minutes.txt
+│   └── experiment_summary.md
+│
+├── src/
+│   ├── preprocess.py
+│   ├── train.py
+│   └── evaluate.py
+│
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Large Artifacts
+
+The following are intentionally **not committed**:
+
+```text
+data/
+nllb-en-as/
+*.safetensors
+*.bin
+*.pt
+```
+
+The fine-tuned checkpoint is approximately **2.4 GB** and should remain in Kaggle or external model storage rather than Git.
+
+The dataset is downloaded automatically and is also excluded from version control.
+
+---
+
+## Limitations
+
+- Only 40,000 sentence pairs were selected from the available corpus.
+- Training was limited to two epochs.
+- Quantitative evaluation used 1,000 held-out test pairs.
+- Some parallel examples appear noisy or loosely aligned.
+- Qualitative evaluation shows occasional hallucination.
+- Only one pretrained architecture and one translation direction were evaluated.
+- Results should not be interpreted as production-level Assamese translation quality.
+
+---
+
+## Future Work
+
+Possible extensions include:
+
+- training on more of the available Samanantar corpus
+- stronger parallel-data filtering
+- evaluation on the complete held-out test set
+- additional human evaluation by Assamese speakers
+- longer or tuned fine-tuning schedules
+- domain-specific evaluation
+- systematic hallucination analysis
+
+Any future experiment should retain the same held-out evaluation protocol when comparing against the results reported here.
+
+---
+
+## Experiment Provenance
+
+The reported results are from a real Kaggle GPU run and are not estimated.
+
+**Platform:** Kaggle
+**GPU:** NVIDIA Tesla T4
+**Training time:** 54.3 minutes
+**Seed:** 42
+**Evaluation:** 1,000 held-out test pairs
+**Base model:** NLLB-200 distilled 600M
+
+The raw model checkpoint and training dataset are intentionally excluded from Git.
