@@ -64,11 +64,15 @@ def main():
     train_ds, val_ds = load("train", args.max_train_rows), load("validation", args.max_val_rows)
     print(f"train={len(train_ds):,} validation={len(val_ds):,}")
 
+    import dataclasses
+    # newer transformers versions replaced warmup_ratio by a float warmup_steps (< 1 means a ratio)
+    fields = {f.name for f in dataclasses.fields(Seq2SeqTrainingArguments)}
+    warmup = {"warmup_ratio": 0.03} if "warmup_ratio" in fields else {"warmup_steps": 0.03}
     targs = Seq2SeqTrainingArguments(
         output_dir=args.output_dir, num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size, per_device_eval_batch_size=args.batch_size * 2,
         gradient_accumulation_steps=args.grad_accum, learning_rate=args.lr, weight_decay=0.01,
-        warmup_ratio=0.03, eval_strategy="epoch", save_strategy="epoch", save_total_limit=1,
+        **warmup, eval_strategy="epoch", save_strategy="epoch", save_total_limit=1,
         load_best_model_at_end=True, metric_for_best_model="eval_loss", greater_is_better=False,
         logging_steps=50, fp16=torch.cuda.is_available(), seed=args.seed, report_to="none",
     )
