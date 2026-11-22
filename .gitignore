@@ -7,3 +7,26 @@ nllb-en-as/
 *.pt
 *.zip
 .env
+
+# Python
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# ML / experiment artifacts
+checkpoints/
+wandb/
+runs/
+outputs/
+
+# Secrets
+.env.*
+!.env.example
