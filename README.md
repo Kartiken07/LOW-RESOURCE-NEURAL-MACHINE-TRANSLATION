@@ -1,21 +1,22 @@
 # Low-Resource Neural Machine Translation: English → Assamese
 
-EXP 10 NLP mini project. Fine-tunes the pretrained **NLLB-200 distilled 600M** model on the **WMT 2026 Indic MT** English–Assamese (`en-as`) data and compares BLEU/chrF before and after fine-tuning.
+EXP 10 NLP mini project. Fine-tunes the pretrained **NLLB-200 distilled 600M** model on an open English–Assamese (`en-as`) parallel corpus and compares BLEU/chrF before and after fine-tuning.
 
 > **Status:** code, notebook and instructions are complete. The model has **not been trained yet** and the results table below is intentionally empty. Scores must come from a real Kaggle GPU run and are not estimated.
 
 ## Dataset
 
-- Source: WMT 2026 Indic MT shared task, <https://www2.statmt.org/wmt26/indic-mt-task.html> (English–Assamese, Category 1).
-- Training data: the official 2026 training dataset. Test/reference data is used **only** for evaluation and must never be added to training (`preprocess.py --exclude` removes any overlap).
-- Data files are not stored in this repository; download them from the task page / the links shared with the team and follow the task page's acknowledgement and citation instructions.
+- **Used:** [AI4Bharat Samanantar](https://huggingface.co/datasets/ai4bharat/samanantar), config `as` (~141k English–Assamese pairs, licence **CC BY-NC 4.0**, academic/non-commercial use). It is downloaded automatically by `src/preprocess.py --hf-dataset samanantar`.
+- **Alternative:** [OPUS-100](https://huggingface.co/datasets/Helsinki-NLP/opus-100) `as-en` (`--hf-dataset opus100`, licence not specified).
+- The WMT 2026 Indic MT data suggested in the project guide was not used because its test data is distributed to registered participants only. Cite Samanantar (Ramesh et al., 2021, "Samanantar: The Largest Publicly Available Parallel Corpora Collection for 11 Indic Languages") and OPUS-100 (Zhang et al., 2020) if used.
+- Data files are not stored in this repository.
 
 ## Preprocessing (`src/preprocess.py`)
 
-1. Load aligned text files (`--src-file/--tgt-file`) or a TSV/CSV/JSONL with English and Assamese columns.
+1. Download the open dataset (`--hf-dataset`), or load aligned text files (`--src-file/--tgt-file`) or a TSV/CSV/JSONL with English and Assamese columns.
 2. Unicode NFC normalisation, removal of control/invisible characters, whitespace collapsing. Assamese script and punctuation are preserved.
 3. Remove empty/missing translations, over-long pairs, pairs with extreme length ratio (misalignment guard) and duplicate pairs.
-4. Optionally remove any pair that also appears in a test/reference file.
+4. Optionally keep a random subset (`--max-rows`) and/or remove any pair that also appears in a test/reference file (`--exclude`).
 5. Shuffle with seed 42 and split 80:10:10 into `train.csv`, `validation.csv`, `test.csv`; counts are written to `preprocess_stats.csv`.
 6. Tokenisation uses the NLLB tokenizer with `src_lang=eng_Latn`, `tgt_lang=asm_Beng`, max length 128.
 
@@ -28,7 +29,7 @@ EXP 10 NLP mini project. Fine-tunes the pretrained **NLLB-200 distilled 600M** m
 
 ## Evaluation (`src/evaluate.py`)
 
-BLEU and chrF via SacreBLEU on held-out test pairs, for the pretrained and the fine-tuned model on exactly the same examples (`--max-samples`). Output: `results/metrics.csv` and `results/sample_translations.csv` (English input, reference, model output).
+BLEU and chrF via SacreBLEU on held-out test pairs (the 10% split, never used in training), for the pretrained and the fine-tuned model on exactly the same examples (`--max-samples`). Output: `results/metrics.csv` and `results/sample_translations.csv` (English input, reference, model output).
 
 | Model | BLEU | chrF |
 |-------|------|------|
@@ -39,13 +40,13 @@ Sample translations and a short error analysis go here after the run.
 
 ## How to run
 
-On Kaggle: open `notebooks/exp10_nmt_kaggle.ipynb`, enable GPU and Internet, add the WMT training data as a Kaggle Dataset, set `TRAIN_FILE`/column names in section 2, and run the cells in order. The last cell is the interactive English → Assamese demo.
+On Kaggle: open `notebooks/exp10_nmt_kaggle.ipynb`, enable GPU and Internet, and run the cells in order (the dataset downloads automatically). The last cell is the interactive English → Assamese demo.
 
 Locally (GPU recommended):
 
 ```bash
 pip install -r requirements.txt
-python src/preprocess.py --input train.tsv --src-col en --tgt-col as --out-dir data/processed
+python src/preprocess.py --hf-dataset samanantar --max-rows 40000 --out-dir data/processed
 python src/evaluate.py --model facebook/nllb-200-distilled-600M --label "Pretrained (before fine-tuning)" --max-samples 1000
 python src/train.py --data-dir data/processed --output-dir nllb-en-as
 python src/evaluate.py --model nllb-en-as --label "Fine-tuned" --max-samples 1000
