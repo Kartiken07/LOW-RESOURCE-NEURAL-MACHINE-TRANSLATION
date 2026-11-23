@@ -1,5 +1,15 @@
 # Low-Resource Neural Machine Translation: English → Assamese
 
+<p align="left">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch">
+  <img src="https://img.shields.io/badge/Transformers-NLLB--200-FFD21E?logo=huggingface&logoColor=black" alt="Hugging Face Transformers">
+  <img src="https://img.shields.io/badge/Task-English%20%E2%86%92%20Assamese-6A5ACD" alt="English to Assamese">
+  <img src="https://img.shields.io/badge/Kaggle-GPU-20BEFF?logo=kaggle&logoColor=white" alt="Kaggle GPU">
+  <img src="https://img.shields.io/badge/BLEU-9.80-success" alt="BLEU 9.80">
+  <img src="https://img.shields.io/badge/chrF-35.29-success" alt="chrF 35.29">
+</p>
+
 EXP 10 NLP mini project. Fine-tunes the pretrained **NLLB-200 distilled 600M** model on an open English–Assamese (`en-as`) parallel corpus and compares BLEU/chrF before and after fine-tuning.
 
 > **Status:** code, notebook and instructions are complete. The model has **not been trained yet** and the results table below is intentionally empty. Scores must come from a real Kaggle GPU run and are not estimated.
@@ -53,6 +63,15 @@ python src/evaluate.py --model nllb-en-as --label "Fine-tuned" --max-samples 100
 ```
 
 Large model checkpoints and dataset files are not committed; see `.gitignore`.
+
+
+## References and Attribution
+
+Model, dataset, evaluation-tool, and framework references are documented in [`REFERENCES.md`](REFERENCES.md).
+
+Third-party resources retain their respective licences and usage terms.
+
+> **Repository licence:** A project-level licence has not yet been specified by the repository owner.
 
 ## Repository layout
 
