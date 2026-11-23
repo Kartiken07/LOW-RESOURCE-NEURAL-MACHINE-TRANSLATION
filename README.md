@@ -1,10 +1,46 @@
 # Low-Resource Neural Machine Translation: English → Assamese
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch">
+  <img src="https://img.shields.io/badge/Transformers-NLLB--200-FFD21E?logo=huggingface&logoColor=black" alt="NLLB-200">
+  <img src="https://img.shields.io/badge/English%20%E2%86%92%20Assamese-NMT-6A5ACD" alt="English to Assamese">
+  <img src="https://img.shields.io/badge/Kaggle-Tesla%20T4-20BEFF?logo=kaggle&logoColor=white" alt="Kaggle Tesla T4">
+  <img src="https://img.shields.io/badge/BLEU-9.80-2EA44F" alt="BLEU 9.80">
+  <img src="https://img.shields.io/badge/chrF-35.29-2EA44F" alt="chrF 35.29">
+  <a href="https://github.com/Kartiken07/LOW-RESOURCE-NEURAL-MACHINE-TRANSLATION/actions/workflows/ci.yml">
+    <img src="https://github.com/Kartiken07/LOW-RESOURCE-NEURAL-MACHINE-TRANSLATION/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://www.kaggle.com/code/namanchanana/nllb-200-english-to-assamese-fine-tuning-samanan">
+    <img src="https://img.shields.io/badge/Kaggle-Training%20Run-20BEFF?logo=kaggle&logoColor=white" alt="Kaggle Training Run">
+  </a>
+
+</p>
+
 Fine-tuning **NLLB-200 distilled 600M** for low-resource English-to-Assamese (`en-as`) neural machine translation using the AI4Bharat Samanantar parallel corpus.
 
 This repository contains the complete EXP 10 pipeline:
 
 **Data preparation → Pretrained baseline → Fine-tuning → Evaluation → Qualitative analysis**
+
+## Contents
+
+- [Results](#results)
+- [Experiment Configuration](#experiment-configuration)
+- [Dataset](#dataset)
+- [Model](#model)
+- [Training](#training)
+- [Evaluation](#evaluation)
+- [Qualitative Examples](#qualitative-examples)
+- [Error Analysis](#error-analysis)
+- [Results Artifacts](#results-artifacts)
+- [How to Reproduce](#how-to-reproduce)
+- [Testing](#testing)
+- [Repository Structure](#repository-structure)
+- [Limitations](#limitations)
+- [Future Work](#future-work)
+- [References and Attribution](#references-and-attribution)
+
 
 ## Results
 
@@ -424,6 +460,27 @@ python src/evaluate.py \
 
 ---
 
+## Testing
+
+The repository includes lightweight automated tests for preprocessing and reproducibility safeguards.
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The test suite covers:
+
+- text cleaning and normalization
+- empty/non-string handling
+- duplicate removal
+- deterministic dataset splitting
+- expected 80:10:10 split sizes
+- notebook format validation
+- Python kernel metadata
+- exclusion of large training/model artifacts
+
+GitHub Actions runs these checks automatically on pushes and pull requests to `main`.
+
 ## Repository Structure
 
 ```text
@@ -501,6 +558,17 @@ Possible extensions include:
 Any future experiment should retain the same held-out evaluation protocol when comparing against the results reported here.
 
 ---
+
+## References and Attribution
+
+Model, dataset, evaluation-tool, and framework references are documented in [`REFERENCES.md`](REFERENCES.md).
+
+Third-party resources retain their respective licences and usage terms.
+
+> **Repository licence:** A project-level licence has not yet been specified by the repository owner.
+
+For contribution guidelines, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 
 ## Experiment Provenance
 
